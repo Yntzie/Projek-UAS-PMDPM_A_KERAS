@@ -1,0 +1,3 @@
+# Abaikan folder models dan file .h5
+models/
+*.h5
