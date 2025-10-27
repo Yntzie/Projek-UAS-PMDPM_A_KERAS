@@ -1,4 +1,4 @@
-tensorflow==2.20.0
+tensorflow
 pillow
 numpy
 pandas
@@ -7,8 +7,3 @@ streamlit
 h5py
 matplotlib
 seaborn
-
-protobuf==3.20.3
-streamlit==1.38.0
-onnxruntime
-
