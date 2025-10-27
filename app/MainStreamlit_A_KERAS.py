@@ -1,32 +1,32 @@
 import streamlit as st
-import tensorflow as tf
-from tensorflow import keras
-from PIL import Image
 import numpy as np
+import onnxruntime as ort
+from PIL import Image
 
-IMG_SIZE = (160, 160)  # samakan dgn ukuran training kamu
+IMG_SIZE = (160, 160)
 CLASS_NAMES = ['bika ambon', 'kerak telor', 'papeda', 'plecing kangkung']
 
-MODEL_PATH = "models/cleaned_model_tfkeras.h5"  # <- hasil save ulang bersih
+MODEL_PATH = "models/cleaned_model_tfkeras.onnx"
 
-# Load model yang udah bersih
-model = keras.models.load_model(MODEL_PATH, compile=False)
+# Load ONNX model
+session = ort.InferenceSession(MODEL_PATH)
 
 def predict_image(file_obj):
     img = Image.open(file_obj).convert("RGB")
     img = img.resize(IMG_SIZE)
+    arr = np.array(img, dtype=np.float32) / 255.0
+    arr = np.expand_dims(arr, axis=0)  # (1,H,W,3)
+    
+    # Nama input dan output tergantung model (biasanya 'input_1')
+    input_name = session.get_inputs()[0].name
+    output_name = session.get_outputs()[0].name
 
-    arr = keras.utils.img_to_array(img)
-    arr = arr / 255.0  # harus sama seperti training
-    arr = np.expand_dims(arr, axis=0)  # shape (1,H,W,3)
-
-    preds = model.predict(arr)
-    probs = tf.nn.softmax(preds[0]).numpy()
-
+    preds = session.run([output_name], {input_name: arr})[0][0]
+    probs = np.exp(preds) / np.sum(np.exp(preds))
     idx = int(np.argmax(probs))
     return CLASS_NAMES[idx], probs
 
-st.title("Klasifikasi Makanan Tradisional Indonesia 🍽")
+st.title("🍽 Klasifikasi Makanan Tradisional Indonesia (ONNX Version)")
 
 uploads = st.file_uploader(
     "Upload gambar makanan (boleh banyak)",
@@ -40,7 +40,6 @@ if st.button("Prediksi"):
     else:
         for f in uploads:
             label, probs = predict_image(f)
-
             st.write(f"**File:** {f.name}")
             st.write(f"**Prediksi:** {label}")
             for cls_name, score in zip(CLASS_NAMES, probs):
