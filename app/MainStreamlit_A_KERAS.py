@@ -2,14 +2,16 @@ import streamlit as st
 import numpy as np
 from PIL import Image
 import tensorflow as tf  # buat fallback interpreter
+import os
 
 CLASS_NAMES = ['bika ambon', 'kerak telor', 'papeda', 'plecing kangkung']
 IMG_SIZE = (224, 224)  # pakai shape training asli kamu
 
-TFLITE_PATH = "models/BestModel_CustomCNN_A_KERAS.tflite"
+BASE_DIR = os.path.dirname(os.path.abspath(__file__))
+TFLITE_PATH = os.path.join(BASE_DIR, "..", "models", "BestModel_CustomCNN_A_KERAS.tflite")
 
-# --- load interpreter TFLite ---
 interpreter = tf.lite.Interpreter(model_path=TFLITE_PATH)
+
 interpreter.allocate_tensors()
 
 input_details = interpreter.get_input_details()
