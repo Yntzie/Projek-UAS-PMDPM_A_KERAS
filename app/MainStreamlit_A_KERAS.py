@@ -1,7 +1,7 @@
 import streamlit as st
 import tensorflow as tf
 import numpy as np
-from tensorflow.keras.models import load_model
+from keras.models import load_model
 from PIL import Image
 
 MODEL_PATH = "../models/BestModel_CustomCNN_A_KERAS.h5"
