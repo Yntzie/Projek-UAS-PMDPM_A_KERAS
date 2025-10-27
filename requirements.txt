@@ -8,3 +8,7 @@ h5py
 matplotlib
 seaborn
 
+protobuf==3.20.3
+streamlit==1.38.0
+onnxruntime
+
