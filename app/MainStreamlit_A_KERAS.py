@@ -4,13 +4,7 @@ import numpy as np
 from keras.models import load_model
 from PIL import Image
 
-MODEL_PATH = "models/BestModel_CustomCNN_A_KERAS.h5"
-
-def load_trained_model():
-    model = load_model(MODEL_PATH)
-    return model
-
-model = load_trained_model()
+model = load_model('models/BestModel_CustomCNN_A_KERAS.h5')
 class_names = ['Kerak Telor', 'Papeda', 'Bika Ambon', 'Plecing Kangkung']
 
 # Function to preprocess and classify image
@@ -113,3 +107,4 @@ if uploaded_files:
     for uploaded_file in uploaded_files:
         image = Image.open(uploaded_file)
         st.image(image, caption=f"{uploaded_file.name}", use_column_width=True)
+
