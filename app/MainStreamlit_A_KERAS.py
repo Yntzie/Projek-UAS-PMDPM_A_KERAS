@@ -1,110 +1,49 @@
 import streamlit as st
 import tensorflow as tf
-import numpy as np
-from keras.models import load_model
+from tensorflow import keras
 from PIL import Image
+import numpy as np
 
-model = load_model('models/BestModel_CustomCNN_A_KERAS.h5')
-class_names = ['Kerak Telor', 'Papeda', 'Bika Ambon', 'Plecing Kangkung']
+IMG_SIZE = (160, 160)  # samakan dgn ukuran training kamu
+CLASS_NAMES = ['bika ambon', 'kerak telor', 'papeda', 'plecing kangkung']
 
-# Function to preprocess and classify image
-def classify_image(image_path):
-    try:
-        # Load and preprocess the image
-        input_image = tf.keras.utils.load_img(image_path, target_size=(224, 224))
-        input_image_array = tf.keras.utils.img_to_array(input_image)
-        input_image_exp_dim= tf.expand_dims (input_image_array, 0)
+MODEL_PATH = "models/cleaned_model_tfkeras.h5"  # <- hasil save ulang bersih
 
-        # Predict using the model
-        predictions = model.predict(input_image_exp_dim)
-        result = tf.nn.softmax (predictions[0]) # Apply softmax for probability
+# Load model yang udah bersih
+model = keras.models.load_model(MODEL_PATH, compile=False)
 
-        # Get class with highest confidence
-        class_idx= np.argmax(result)
-        confidence_scores = result.numpy()
-        return class_names [class_idx], confidence_scores
-    except Exception as e:
-        return "Error", str(e)
-    
-# Function to create a custom progress bar
-def custom_progress_bar (confidence, color1, color2, color3, color4):
-    percentage1 = confidence[0] * 100 # Kerak Telor
-    percentage2 = confidence[1] * 100 # Papeda
-    percentage3 = confidence[2] * 100 # Bika Ambon
-    percentage4 = confidence[3] * 100 # Plecing Kangkung
+def predict_image(file_obj):
+    img = Image.open(file_obj).convert("RGB")
+    img = img.resize(IMG_SIZE)
 
-    progress_html = f"""
-    <div style="border: 1px solid #ddd; border-radius: 5px; overflow: hidden; width: 100%; font-size: 14px;">
-        <div style="width: {percentage1:.2f}%; background: {color1}; color: white; text-align: center; height: 24px; float: left;"> 
-            {percentage1:.2f}%
-        </div>
-        <div style="width: {percentage2:.2f}%; background: {color2}; color: white; text-align: center; height: 24px; float: left;"> 
-            {percentage2:.2f}%
-        </div>
-        <div style="width: {percentage3:.2f}%; background: {color3}; color: white; text-align: center; height: 24px; float: left;"> 
-            {percentage3:.2f}%
-        </div>
-        <div style="width: {percentage4:.2f}%; background: {color4}; color: white; text-align: center; height: 24px; float: left;"> 
-            {percentage4:.2f}%
-        </div>
-    </div>
-    """
-    st.sidebar.markdown (progress_html, unsafe_allow_html=True)
+    arr = keras.utils.img_to_array(img)
+    arr = arr / 255.0  # harus sama seperti training
+    arr = np.expand_dims(arr, axis=0)  # shape (1,H,W,3)
 
-# StreamLit UI
-st.title("Prediksi Makanan Tradisional Indonesia")
+    preds = model.predict(arr)
+    probs = tf.nn.softmax(preds[0]).numpy()
 
-# Upload multiple files in the main page
-uploaded_files = st.file_uploader ("Unggah Gambar (Beberapa diperbolehkan)", type=["jpg", "png", "jpeg"], accept_multiple_files=True)
+    idx = int(np.argmax(probs))
+    return CLASS_NAMES[idx], probs
 
-# Sidebar for prediction button and results
-if st.sidebar.button("Prediksi"):
-    if uploaded_files:
-        st.sidebar.write("### Hasil Prediksi")
-        for uploaded_file in uploaded_files:
-            with open(uploaded_file.name, "wb") as f: 
-                f.write(uploaded_file.getbuffer())
+st.title("Klasifikasi Makanan Tradisional Indonesia 🍽")
 
-            # Perform prediction
-            label, confidence = classify_image (uploaded_file.name)
+uploads = st.file_uploader(
+    "Upload gambar makanan (boleh banyak)",
+    type=["jpg", "jpeg", "png"],
+    accept_multiple_files=True
+)
 
-            if label != "Error":
-                # Define colors for the bar and Label
-                first_color="#FF4136" # Red for "Kerak Telor" 
-                second_color="#fff236" # Yellow for "Papeda"
-                third_color="#58ff36" # Green for "Bika Ambon"
-                fourth_color="#36a2ff" # Blue for "Plecing Kangkung"
-                if(label == "Kerak Telor"):
-                    label_color = first_color
-                elif(label == "Papeda"):
-                    label_color = second_color
-                elif(label == "Bika Ambon"):
-                    label_color = third_color
-                else:
-                    label_color = fourth_color
-
-                # Display prediction results
-                st.sidebar.write(f"**Nama File:** {uploaded_file.name}")
-                st.sidebar.markdown (f" <h4 style='color: {label_color};'>Prediksi: {label}</h4>", unsafe_allow_html=True)
-
-                # Display confidence scores
-                st.sidebar.write("**Confidence:**")
-                for i, class_name in enumerate(class_names):
-                    st.sidebar.write(f"- {class_name}: {confidence[i] * 100:.2f}%")
-
-                # Display custom progress bar
-                custom_progress_bar (confidence, first_color, second_color, third_color, fourth_color)
-                st.sidebar.write("---")
-            
-            else:
-                st.sidebar.error(f" Kesalahan saat memproses gambar {uploaded_file.name}: {confidence}")
+if st.button("Prediksi"):
+    if not uploads:
+        st.error("Silakan upload minimal satu gambar dulu.")
     else:
-        st.sidebar.error("Silakan unggah setidaknya satu gambar untuk diprediksi.")
+        for f in uploads:
+            label, probs = predict_image(f)
 
-# Preview images in the main page
-if uploaded_files:
-    st.write("### Preview Gambar")
-    for uploaded_file in uploaded_files:
-        image = Image.open(uploaded_file)
-        st.image(image, caption=f"{uploaded_file.name}", use_column_width=True)
-
+            st.write(f"**File:** {f.name}")
+            st.write(f"**Prediksi:** {label}")
+            for cls_name, score in zip(CLASS_NAMES, probs):
+                st.write(f"- {cls_name}: {score * 100:.2f}%")
+            st.image(Image.open(f), caption=f.name, use_column_width=True)
+            st.markdown("---")
