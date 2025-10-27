@@ -1,32 +1,32 @@
 import streamlit as st
-import numpy as np
-import onnxruntime as ort
+import tensorflow as tf
+from tensorflow import keras
 from PIL import Image
+import numpy as np
 
-IMG_SIZE = (160, 160)
+IMG_SIZE = (160, 160)  # samakan dgn ukuran training kamu
 CLASS_NAMES = ['bika ambon', 'kerak telor', 'papeda', 'plecing kangkung']
 
-MODEL_PATH = "models/cleaned_model_tfkeras.onnx"
+MODEL_PATH = "models/cleaned_model_tfkeras.h5"  # <- hasil save ulang bersih
 
-# Load ONNX model
-session = ort.InferenceSession(MODEL_PATH)
+# Load model yang udah bersih
+model = keras.models.load_model(MODEL_PATH, compile=False)
 
 def predict_image(file_obj):
     img = Image.open(file_obj).convert("RGB")
     img = img.resize(IMG_SIZE)
-    arr = np.array(img, dtype=np.float32) / 255.0
-    arr = np.expand_dims(arr, axis=0)  # (1,H,W,3)
-    
-    # Nama input dan output tergantung model (biasanya 'input_1')
-    input_name = session.get_inputs()[0].name
-    output_name = session.get_outputs()[0].name
 
-    preds = session.run([output_name], {input_name: arr})[0][0]
-    probs = np.exp(preds) / np.sum(np.exp(preds))
+    arr = keras.utils.img_to_array(img)
+    arr = arr / 255.0  # harus sama seperti training
+    arr = np.expand_dims(arr, axis=0)  # shape (1,H,W,3)
+
+    preds = model.predict(arr)
+    probs = tf.nn.softmax(preds[0]).numpy()
+
     idx = int(np.argmax(probs))
     return CLASS_NAMES[idx], probs
 
-st.title("🍽 Klasifikasi Makanan Tradisional Indonesia (ONNX Version)")
+st.title("Klasifikasi Makanan Tradisional Indonesia 🍽")
 
 uploads = st.file_uploader(
     "Upload gambar makanan (boleh banyak)",
@@ -40,9 +40,12 @@ if st.button("Prediksi"):
     else:
         for f in uploads:
             label, probs = predict_image(f)
+
             st.write(f"**File:** {f.name}")
             st.write(f"**Prediksi:** {label}")
             for cls_name, score in zip(CLASS_NAMES, probs):
                 st.write(f"- {cls_name}: {score * 100:.2f}%")
             st.image(Image.open(f), caption=f.name, use_column_width=True)
             st.markdown("---")
+
+ubahkan ke 2versi yaitu onnx dan tflite 
