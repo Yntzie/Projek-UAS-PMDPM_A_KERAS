@@ -4,7 +4,11 @@ import numpy as np
 from tensorflow.keras.models import load_model
 from PIL import Image
 
-model = load_model(r'D:\kuliah\7\DL\uts\Projek-UAS-PMDPM_A_KERAS\models\BestModel_CustomCNN_A_KERAS.h5')
+def load_trained_model():
+    model = load_model(MODEL_PATH)
+    return model
+
+model = load_trained_model()
 class_names = ['Kerak Telor', 'Papeda', 'Bika Ambon', 'Plecing Kangkung']
 
 # Function to preprocess and classify image
