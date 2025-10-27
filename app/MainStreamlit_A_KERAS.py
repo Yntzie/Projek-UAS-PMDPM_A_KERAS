@@ -1,17 +1,18 @@
 import streamlit as st
 import numpy as np
 from PIL import Image
-import tensorflow as tf  # buat fallback interpreter
+import tensorflow as tf
 import os
 
 CLASS_NAMES = ['bika ambon', 'kerak telor', 'papeda', 'plecing kangkung']
-IMG_SIZE = (224, 224)  # pakai shape training asli kamu
+IMG_SIZE = (224, 224)
 
+# bikin path absolut ke file .tflite relatif dari file python ini
 BASE_DIR = os.path.dirname(os.path.abspath(__file__))
 TFLITE_PATH = os.path.join(BASE_DIR, "..", "models", "BestModel_CustomCNN_A_KERAS.tflite")
 
+# load interpreter TFLite
 interpreter = tf.lite.Interpreter(model_path=TFLITE_PATH)
-
 interpreter.allocate_tensors()
 
 input_details = interpreter.get_input_details()
@@ -26,9 +27,9 @@ def predict_image(file_obj):
 
     interpreter.set_tensor(input_details[0]['index'], arr)
     interpreter.invoke()
-    preds = interpreter.get_tensor(output_details[0]['index'])[0]  # shape (4,)
-    probs = tf.nn.softmax(preds).numpy()
 
+    preds = interpreter.get_tensor(output_details[0]['index'])[0]  # (4,)
+    probs = tf.nn.softmax(preds).numpy()
     idx = int(np.argmax(probs))
     return CLASS_NAMES[idx], probs, img
 
