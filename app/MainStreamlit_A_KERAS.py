@@ -7,7 +7,7 @@ import numpy as np
 IMG_SIZE = (160, 160)  # samakan dgn ukuran training kamu
 CLASS_NAMES = ['bika ambon', 'kerak telor', 'papeda', 'plecing kangkung']
 
-MODEL_PATH = "models/cleaned_model_tfkeras.h5"  # <- hasil save ulang bersih
+MODEL_PATH = "models/BestModel_CustomCNN_A_KERAS.tflite"  # <- hasil save ulang bersih
 
 # Load model yang udah bersih
 model = keras.models.load_model(MODEL_PATH, compile=False)
