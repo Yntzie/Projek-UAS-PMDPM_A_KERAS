@@ -1,4 +1,4 @@
-tensorflow==2.20.0
+tensorflow
 pillow
 numpy
 pandas
@@ -7,4 +7,3 @@ streamlit
 h5py
 matplotlib
 seaborn
-

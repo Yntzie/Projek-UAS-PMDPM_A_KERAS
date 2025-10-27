@@ -1,14 +1,20 @@
 import streamlit as st
 import tensorflow as tf
 from tensorflow import keras
+import tensorflow as tf
+from tensorflow import keras
 from PIL import Image
 import numpy as np
+import numpy as np
 
+IMG_SIZE = (160, 160)  # samakan dgn ukuran training kamu
 IMG_SIZE = (160, 160)  # samakan dgn ukuran training kamu
 CLASS_NAMES = ['bika ambon', 'kerak telor', 'papeda', 'plecing kangkung']
 
 MODEL_PATH = "models/BestModel_CustomCNN_A_KERAS.tflite"  # <- hasil save ulang bersih
 
+# Load model yang udah bersih
+model = keras.models.load_model(MODEL_PATH, compile=False)
 # Load model yang udah bersih
 model = keras.models.load_model(MODEL_PATH, compile=False)
 
@@ -23,9 +29,18 @@ def predict_image(file_obj):
     preds = model.predict(arr)
     probs = tf.nn.softmax(preds[0]).numpy()
 
+
+    arr = keras.utils.img_to_array(img)
+    arr = arr / 255.0  # harus sama seperti training
+    arr = np.expand_dims(arr, axis=0)  # shape (1,H,W,3)
+
+    preds = model.predict(arr)
+    probs = tf.nn.softmax(preds[0]).numpy()
+
     idx = int(np.argmax(probs))
     return CLASS_NAMES[idx], probs
 
+st.title("Klasifikasi Makanan Tradisional Indonesia 🍽")
 st.title("Klasifikasi Makanan Tradisional Indonesia 🍽")
 
 uploads = st.file_uploader(
@@ -40,6 +55,7 @@ if st.button("Prediksi"):
     else:
         for f in uploads:
             label, probs = predict_image(f)
+
 
             st.write(f"**File:** {f.name}")
             st.write(f"**Prediksi:** {label}")
