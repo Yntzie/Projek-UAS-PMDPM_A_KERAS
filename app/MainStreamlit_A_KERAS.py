@@ -1,47 +1,79 @@
 import streamlit as st
 import tensorflow as tf
-from tensorflow import keras
-import tensorflow as tf
-from tensorflow import keras
+import numpy as np
 from PIL import Image
-import numpy as np
-import numpy as np
 
-IMG_SIZE = (160, 160)  # samakan dgn ukuran training kamu
-IMG_SIZE = (160, 160)  # samakan dgn ukuran training kamu
+# =========================
+# KONFIGURASI MODEL
+# =========================
+IMG_SIZE = (224, 224)  # HARUS sama dengan input model CustomCNN kamu
 CLASS_NAMES = ['bika ambon', 'kerak telor', 'papeda', 'plecing kangkung']
 
-MODEL_PATH = "models/BestModel_CustomCNN_A_KERAS.tflite"  # <- hasil save ulang bersih
+MODEL_PATH = "models/BestModel_CustomCNN_A_KERAS.tflite"  # path .tflite hasil konversi
 
-# Load model yang udah bersih
-model = keras.models.load_model(MODEL_PATH, compile=False)
-# Load model yang udah bersih
-model = keras.models.load_model(MODEL_PATH, compile=False)
 
+# =========================
+# LOAD TFLITE INTERPRETER
+# =========================
+@st.cache_resource
+def load_tflite_interpreter(model_path):
+    interpreter = tf.lite.Interpreter(model_path=model_path)
+    interpreter.allocate_tensors()
+
+    input_details = interpreter.get_input_details()
+    output_details = interpreter.get_output_details()
+
+    # Debug info kalau mau cek
+    # st.write("Input details:", input_details)
+    # st.write("Output details:", output_details)
+
+    return interpreter, input_details, output_details
+
+
+interpreter, input_details, output_details = load_tflite_interpreter(MODEL_PATH)
+
+
+# =========================
+# FUNGSI PREDIKSI
+# =========================
 def predict_image(file_obj):
+    # 1. Baca gambar
     img = Image.open(file_obj).convert("RGB")
     img = img.resize(IMG_SIZE)
 
-    arr = keras.utils.img_to_array(img)
-    arr = arr / 255.0  # harus sama seperti training
-    arr = np.expand_dims(arr, axis=0)  # shape (1,H,W,3)
+    # 2. Preprocess -> float32 [0..1], shape (1,H,W,3)
+    arr = np.array(img).astype("float32") / 255.0
+    arr = np.expand_dims(arr, axis=0)
 
-    preds = model.predict(arr)
-    probs = tf.nn.softmax(preds[0]).numpy()
+    # 3. Masukkan ke interpreter TFLite
+    #    Sesuaikan dtype & index input
+    input_index = input_details[0]['index']
+    output_index = output_details[0]['index']
 
+    # Pastikan tipe datanya cocok
+    arr_for_model = arr.astype(input_details[0]['dtype'])
+    interpreter.set_tensor(input_index, arr_for_model)
 
-    arr = keras.utils.img_to_array(img)
-    arr = arr / 255.0  # harus sama seperti training
-    arr = np.expand_dims(arr, axis=0)  # shape (1,H,W,3)
+    # 4. Inference
+    interpreter.invoke()
 
-    preds = model.predict(arr)
-    probs = tf.nn.softmax(preds[0]).numpy()
+    # 5. Ambil output
+    output_data = interpreter.get_tensor(output_index)  # shape (1,4)
+    probs = output_data[0]  # shape (4,)
 
+    # 6. Ambil label dengan skor tertinggi
     idx = int(np.argmax(probs))
-    return CLASS_NAMES[idx], probs
+    pred_label = CLASS_NAMES[idx]
 
-st.title("Klasifikasi Makanan Tradisional Indonesia 🍽")
-st.title("Klasifikasi Makanan Tradisional Indonesia 🍽")
+    return pred_label, probs
+
+
+# =========================
+# UI STREAMLIT
+# =========================
+st.title("🍽 Klasifikasi Makanan Tradisional Indonesia")
+st.write("Upload gambar makanan, lalu aku coba tebak apakah itu: "
+         "`bika ambon / kerak telor / papeda / plecing kangkung`.")
 
 uploads = st.file_uploader(
     "Upload gambar makanan (boleh banyak)",
@@ -56,12 +88,6 @@ if st.button("Prediksi"):
         for f in uploads:
             label, probs = predict_image(f)
 
-
-            st.write(f"**File:** {f.name}")
+            st.subheader(f.name)
             st.write(f"**Prediksi:** {label}")
-            for cls_name, score in zip(CLASS_NAMES, probs):
-                st.write(f"- {cls_name}: {score * 100:.2f}%")
-            st.image(Image.open(f), caption=f.name, use_column_width=True)
-            st.markdown("---")
-
-ubahkan ke 2versi yaitu onnx dan tflite 
+            st.write("Skor probabilitas:")
