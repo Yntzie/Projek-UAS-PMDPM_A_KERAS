@@ -4,7 +4,7 @@ import numpy as np
 from keras.models import load_model
 from PIL import Image
 
-MODEL_PATH = "../models/BestModel_CustomCNN_A_KERAS.h5"
+MODEL_PATH = "models/BestModel_CustomCNN_A_KERAS.h5"
 
 def load_trained_model():
     model = load_model(MODEL_PATH)
