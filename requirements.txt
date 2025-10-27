@@ -7,5 +7,4 @@ streamlit
 h5py
 matplotlib
 seaborn
-onnxruntime
-tflite-runtime
+
