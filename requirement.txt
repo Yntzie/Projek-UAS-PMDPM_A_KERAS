@@ -1,6 +1,5 @@
 tensorflow-cpu==2.16.1
 pillow
-keras
 numpy
 pandas
 matplotlib
